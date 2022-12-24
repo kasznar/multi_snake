@@ -26,6 +26,20 @@
 </body>
 
 <script>
+    const Direction = {
+        UP: 'up',
+        DOWN: 'down',
+        LEFT: 'left',
+        RIGHT: 'right'
+    }
+
+    const KeyCode = {
+        ArrowUp: 'ArrowUp',
+        ArrowDown: 'ArrowDown',
+        ArrowRight: 'ArrowRight',
+        ArrowLeft: 'ArrowLeft',
+    }
+
     const colors = {
         background: 'black'
     }
@@ -45,8 +59,6 @@
             height: this.client.height / this.resolution.height
         }
 
-
-
         constructor() {
             const canvas = document.getElementById('canvas');
             canvas.width = this.client.width;
@@ -54,7 +66,6 @@
 
             this.ctx = canvas.getContext("2d");
         }
-
 
         drawPoint(x, y, color) {
             this.ctx.save();
@@ -83,47 +94,16 @@
         }
     }
 
-    const Direction = {
-        UP: 'up',
-        DOWN: 'down',
-        LEFT: 'left',
-        RIGHT: 'right'
-    }
-
     class Snake {
         color = 'white'
-        direction = Direction.RIGHT;
 
-        constructor(renderer, head) {
+        constructor(renderer) {
             this.renderer = renderer;
-            this.body = [head];
-            for (let i = 0; i < 5; i++) {
-                this.body.push({x: head.x - i,y:  head.y})
-            }
 
         }
 
-        update() {
-            const head = this.body[0];
-            let newHead;
-
-            switch (this.direction) {
-                case Direction.RIGHT:
-                    newHead = {x: head.x + 1, y: head.y}
-                    break;
-                case Direction.LEFT:
-                    newHead = {x: head.x - 1, y: head.y}
-                    break;
-                case Direction.UP:
-                    newHead = {x: head.x, y: head.y - 1}
-                    break;
-                case Direction.DOWN:
-                    newHead = {x: head.x, y: head.y + 1}
-                    break;
-            }
-
-            this.body.unshift(newHead)
-            this.body.pop();
+        update(body) {
+            this.body = body;
         }
 
         draw() {
@@ -133,50 +113,35 @@
         }
     }
 
-
-
-
     const renderer = new Renderer();
+    const snake = new Snake(renderer)
 
-    const snake = new Snake(renderer, {x: 10, y: 10})
 
-    const KeyCode = {
-        ArrowUp: 'ArrowUp',
-        ArrowDown: 'ArrowDown',
-        ArrowRight: 'ArrowRight',
-        ArrowLeft: 'ArrowLeft',
+    function tick(data) {
+        renderer.clear();
+        snake.update(data.body);
+        snake.draw();
     }
 
-    window.addEventListener("keydown", (event) => {
-        switch (event.key) {
-            case KeyCode.ArrowLeft:
-                if (snake.direction !== Direction.RIGHT) {
-                    snake.direction = Direction.LEFT;
-                }
-                break;
-            case KeyCode.ArrowRight:
-                if (snake.direction !== Direction.LEFT) {
-                    snake.direction = Direction.RIGHT;
-                }
-                break;
-            case KeyCode.ArrowUp:
-                if (snake.direction !== Direction.DOWN) {
-                    snake.direction = Direction.UP;
-                }
-                break;
-            case KeyCode.ArrowDown:
-                if (snake.direction !== Direction.UP) {
-                    snake.direction = Direction.DOWN;
-                }
-                break;
-        }
-    });
 
-    setInterval(() => {
-        renderer.clear();
-        snake.update();
-        snake.draw();
-    }, 500)
+    const webSocket = new WebSocket('ws://localhost:8080/ws/');
+
+    webSocket.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        tick(data);
+    }
+
+
+    window.addEventListener("keydown", (event) => {
+        const eventMap = {
+            [KeyCode.ArrowLeft]: Direction.LEFT,
+            [KeyCode.ArrowRight]: Direction.RIGHT,
+            [KeyCode.ArrowUp]: Direction.UP,
+            [KeyCode.ArrowDown]: Direction.DOWN,
+        };
+
+        webSocket.send(eventMap[event.key]);
+    });
 
 
 </script>

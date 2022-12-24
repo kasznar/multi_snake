@@ -8,6 +8,7 @@ use actix_files::{Files, NamedFile};
 
 mod examples;
 mod websocket;
+mod game;
 
 
 async fn index() -> impl Responder {
