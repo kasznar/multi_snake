@@ -106,8 +106,6 @@ impl Snake {
         body
     }
 
-
-
     pub fn set_direction(&mut self, direction: Direction) {
         let valid = match direction {
             Direction::RIGHT => self.direction != Direction::LEFT,

@@ -31,6 +31,7 @@
 </head>
 <body>
     <div id="controls">
+        <button id="init-ws">init ws</button>
         <button id="connect">connect</button>
         <button id="stop">stop</button>
     </div>
@@ -53,7 +54,9 @@
     }
 
     const colors = {
-        background: 'black'
+        background: 'black',
+        player1: 'red',
+        player2: 'blue',
     }
 
     class Renderer {
@@ -84,7 +87,7 @@
             this.ctx.beginPath();
 
             this.ctx.fillStyle = color;
-            this.ctx.strokeStyle = 'red';
+            this.ctx.strokeStyle = 'white';
 
             const topLeft = {
                 x: x * this.pixel.width,
@@ -107,11 +110,9 @@
     }
 
     class Snake {
-        color = 'white'
-
-        constructor(renderer) {
+        constructor(renderer, color) {
             this.renderer = renderer;
-
+            this.color = color;
         }
 
         update(body) {
@@ -125,52 +126,101 @@
         }
     }
 
-    const renderer = new Renderer();
-    const snakes = [new Snake(renderer), new Snake(renderer)]
+    class Game {
+        constructor(connection) {
+            this.renderer = new Renderer();
+            this.snakes = [
+                new Snake(this.renderer, colors.player1),
+                new Snake(this.renderer, colors.player2)
+            ]
+            this.initEventListeners();
 
-    function tick(data) {
-        renderer.clear();
-        snakes.forEach((snake, i) => {
-            snake.update(data.players[i].body)
-            snake.draw();
-        })
+            this.connection = connection;
+            this.connection.onMessage(this.handleMessage.bind(this))
+        }
+
+        handleMessage(data) {
+            if (data.players) {
+                this.tick(data);
+            }
+        }
+
+        initEventListeners() {
+            const connectButton = document.getElementById('connect');
+            const disconnectButton = document.getElementById('stop');
+            const initWsButton = document.getElementById('init-ws');
+
+            connectButton.addEventListener('click', () => {
+                this.connection.connect();
+            })
+
+            disconnectButton.addEventListener('click', () => {
+                this.connection.stop();
+            })
+
+            initWsButton.addEventListener('click', () => {
+                this.connection.initWebSocket();
+            })
+
+
+            window.addEventListener("keydown", (event) => {
+                const eventMap = {
+                    [KeyCode.ArrowLeft]: Direction.LEFT,
+                    [KeyCode.ArrowRight]: Direction.RIGHT,
+                    [KeyCode.ArrowUp]: Direction.UP,
+                    [KeyCode.ArrowDown]: Direction.DOWN,
+                };
+
+                this.connection.send(eventMap[event.key]);
+            });
+        }
+
+        tick(data) {
+            this.renderer.clear();
+            this.snakes.forEach((snake, i) => {
+                snake.update(data.players?.[i].body)
+                snake.draw();
+            })
+        }
     }
 
 
-    const webSocket = new WebSocket('ws://localhost:8080/ws/');
 
-    const connectButton = document.getElementById('connect');
-    const disconnectButton = document.getElementById('stop');
+    class Connection {
+        _onMessage = () => {}
 
-    connectButton.addEventListener('click', () => {
-        webSocket.send("/connect");
+        initWebSocket() {
+            this.webSocket = new WebSocket('ws://localhost:8080/ws/');
 
-    })
+            this.webSocket.onmessage = ((event) => {
+                const data = JSON.parse(event.data);
+                this._onMessage(data);
+            })
+        }
 
-    disconnectButton.addEventListener('click', () => {
-        webSocket.send("/stop");
-    })
+        onMessage(cb) {
+            this._onMessage = cb;
+        }
 
-    webSocket.addEventListener('open', (event) => {
-    });
+        send(data) {
+            this.webSocket.send(data)
+        }
 
+        connect() {
+            this.webSocket.send("/connect");
+        }
 
-    webSocket.onmessage = function (event) {
-        const data = JSON.parse(event.data);
-        tick(data);
+        stop() {
+            this.webSocket.send("/stop");
+        }
+
+        constructor() {
+            this.initWebSocket();
+        }
     }
 
+    new Game(new Connection());
 
-    window.addEventListener("keydown", (event) => {
-        const eventMap = {
-            [KeyCode.ArrowLeft]: Direction.LEFT,
-            [KeyCode.ArrowRight]: Direction.RIGHT,
-            [KeyCode.ArrowUp]: Direction.UP,
-            [KeyCode.ArrowDown]: Direction.DOWN,
-        };
-
-        webSocket.send(eventMap[event.key]);
-    });
 
 
 </script>
