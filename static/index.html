@@ -6,7 +6,11 @@
     <style>
         * { margin: 0; padding: 0;}
 
-        body, html { height:100%; overflow: hidden;}
+        body, html {
+            height:100%;
+            overflow: hidden;
+            flex-direction: column;
+        }
 
         body {
             display: flex;
@@ -19,9 +23,17 @@
             border: 1px solid cadetblue;
             background: black;
         }
+
+        #controls {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
+    <div id="controls">
+        <button id="connect">connect</button>
+        <button id="stop">stop</button>
+    </div>
     <canvas id="canvas"></canvas>
 </body>
 
@@ -114,17 +126,34 @@
     }
 
     const renderer = new Renderer();
-    const snake = new Snake(renderer)
-
+    const snakes = [new Snake(renderer), new Snake(renderer)]
 
     function tick(data) {
         renderer.clear();
-        snake.update(data.body);
-        snake.draw();
+        snakes.forEach((snake, i) => {
+            snake.update(data.players[i].body)
+            snake.draw();
+        })
     }
 
 
     const webSocket = new WebSocket('ws://localhost:8080/ws/');
+
+    const connectButton = document.getElementById('connect');
+    const disconnectButton = document.getElementById('stop');
+
+    connectButton.addEventListener('click', () => {
+        webSocket.send("/connect");
+
+    })
+
+    disconnectButton.addEventListener('click', () => {
+        webSocket.send("/stop");
+    })
+
+    webSocket.addEventListener('open', (event) => {
+    });
+
 
     webSocket.onmessage = function (event) {
         const data = JSON.parse(event.data);

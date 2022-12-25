@@ -1,22 +1,25 @@
 use std::time::Duration;
-use actix::{Actor, Addr, ArbiterHandle, AsyncContext, Context, Running, StreamHandler};
-use actix_web_actors::ws;
-use actix_web::{get, post, web, HttpResponse, Responder, middleware, HttpRequest, Error};
-use serde::Serialize;
-use crate::game::{Direction, Point, Snake};
 
+use actix::{Actor, Addr, ArbiterHandle, AsyncContext, Context, Running, SpawnHandle, StreamHandler};
+use actix_web::{Error, get, HttpRequest, HttpResponse, middleware, post, Responder, web};
+use actix_web_actors::ws;
+
+
+use crate::game::{Direction, Point, Snake};
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_millis(100);
 
 struct WebsocketActor {
-   snake: Snake
+    snake: Snake,
+    handle: Option<SpawnHandle>,
 }
 
 impl WebsocketActor {
     pub fn new() -> WebsocketActor {
-        let snake = Snake::new(Point{x: 10, y: 3});
+        let snake = Snake::new(Point{x: 10, y: 3}, Direction::RIGHT);
 
         WebsocketActor {
+            handle: None,
             snake
         }
     }
@@ -31,6 +34,12 @@ impl WebsocketActor {
                 ctx.text(text);
             }
         });
+    }
+
+    fn stop_game(&mut self, ctx: &mut ws::WebsocketContext<Self>) {
+        if let Some(handle) = self.handle {
+            ctx.cancel_future(handle);
+        }
     }
 }
 
