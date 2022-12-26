@@ -142,7 +142,7 @@ impl Snake {
 }
 
 #[derive(Copy, Clone, Serialize)]
-enum Player {
+pub enum Player {
     Player1,
     Player2,
 }
@@ -167,5 +167,17 @@ impl Game {
     pub fn tick(&mut self) {
         self.players.0.update();
         self.players.1.update();
+    }
+
+    pub fn change_direction(&mut self, player: Player, direction: Direction) {
+        match player {
+            Player::Player1 => {
+                self.players.0.set_direction(direction);
+            }
+            Player::Player2 => {
+                self.players.1.set_direction(direction);
+            }
+        }
+
     }
 }

@@ -1056,6 +1056,7 @@ dependencies = [
  "actix-web",
  "actix-web-actors",
  "env_logger",
+ "rand",
  "serde",
  "serde_json",
 ]

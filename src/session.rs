@@ -8,6 +8,7 @@ use crate::game::Direction;
 use crate::game_server;
 
 pub struct WsGameSession {
+    pub id: usize,
     pub game_server: Addr<game_server::GameServer>,
 }
 
@@ -45,11 +46,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
                                 address: address.recipient(),
                             })
                             .into_actor(self)
-                            .then(|res, _, ctx| {
+                            .then(|res, act, ctx| {
                                 match res {
                                     Ok(result) => {
+                                        act.id = result.session_id;
+
                                         // todo: implement Into<ByteString> for responses
-                                        let serde_result = serde_json::to_string(&result);
+                                        let serde_result = serde_json::to_string(&result.success);
                                         if let Ok(text) = serde_result {
                                             ctx.text(text);
                                         }
@@ -73,7 +76,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
                         };
 
                         if let Some(direction) = new_direction {
-                            // self.snake.set_direction(direction);
+                            self.game_server.do_send(game_server::ChangeDirection {
+                                session_id: self.id,
+                                direction
+                            });
                         }
                     }
                 }

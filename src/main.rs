@@ -22,7 +22,8 @@ pub async fn game_ws(
     stream: web::Payload,
     server: web::Data<Addr<game_server::GameServer>>
 ) -> Result<HttpResponse, Error> {
-    ws::start(session::WsGameSession{
+    ws::start(session::WsGameSession {
+        id: 0,
         game_server: server.get_ref().clone()
     }, &req, stream)
 }
