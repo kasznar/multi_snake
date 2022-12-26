@@ -1,13 +1,11 @@
-use actix_web::{get, post, web, HttpResponse, Responder, middleware, HttpRequest, Error};
-use env_logger::Env;
 use std::sync::Mutex;
-use actix_web_actors::ws;
-use actix::{Actor, Addr, ArbiterHandle, Context, Running, StreamHandler};
-use crate::examples::AppStateWithCounter;
-use actix_files::{Files, NamedFile};
 
-mod examples;
-mod websocket;
+use actix::{Actor, Addr, ArbiterHandle, Context, Running, StreamHandler};
+use actix_files::{Files, NamedFile};
+use actix_web::{Error, get, HttpRequest, HttpResponse, middleware, post, Responder, web};
+use actix_web_actors::ws;
+use env_logger::Env;
+
 mod game;
 mod game_server;
 mod session;

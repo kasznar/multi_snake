@@ -29,7 +29,7 @@ pub struct StopGame;
 // todo: tuple type
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct GameUpdated{
+pub struct GameUpdated {
     pub state: Game,
 }
 
@@ -37,12 +37,12 @@ pub struct GameUpdated{
 #[rtype(result = "()")]
 pub struct ChangeDirection {
     pub session_id: usize,
-    pub direction: Direction
+    pub direction: Direction,
 }
 
 struct PlayerSession {
     id: usize,
-    address: Recipient<GameUpdated>
+    address: Recipient<GameUpdated>,
 }
 
 pub struct GameServer {
@@ -55,7 +55,7 @@ pub struct GameServer {
 
 impl GameServer {
     pub fn new() -> GameServer {
-        GameServer{
+        GameServer {
             player1: None,
             player2: None,
             handle: None,
@@ -90,7 +90,7 @@ impl GameServer {
     }
 }
 
-impl Actor for GameServer{
+impl Actor for GameServer {
     type Context = Context<Self>;
 }
 
@@ -104,8 +104,8 @@ impl Handler<ConnectGame> for GameServer {
         if self.player1.is_some() && self.player2.is_some() {
             return MessageResult(GameConnectResult {
                 session_id: id,
-                success:false,
-            })
+                success: false,
+            });
         }
 
         let player_session = PlayerSession {
@@ -123,7 +123,7 @@ impl Handler<ConnectGame> for GameServer {
         return MessageResult(GameConnectResult {
             session_id: id,
             success: true,
-        })
+        });
     }
 }
 
@@ -144,13 +144,13 @@ impl Handler<ChangeDirection> for GameServer {
     type Result = MessageResult<ChangeDirection>;
 
     fn handle(&mut self, msg: ChangeDirection, ctx: &mut Self::Context) -> Self::Result {
-        if let Some(player1) = &self.player1{
+        if let Some(player1) = &self.player1 {
             if player1.id == msg.session_id {
                 self.game.change_direction(Player::Player1, msg.direction);
             }
         }
 
-        if let Some(player2) = &self.player2{
+        if let Some(player2) = &self.player2 {
             if player2.id == msg.session_id {
                 self.game.change_direction(Player::Player2, msg.direction);
             }

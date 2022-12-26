@@ -144,7 +144,8 @@ class Game {
 }
 
 class Connection {
-    _onMessage = () => {}
+    _onMessage = () => {
+    }
 
     initWebSocket() {
         this.webSocket = new WebSocket('ws://localhost:8080/ws/');

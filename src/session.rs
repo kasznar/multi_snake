@@ -36,13 +36,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
                 // todo: how to match directly the ByteString
                 let message = text.trim();
 
-
                 match message {
                     "/connect" => {
                         let address = ctx.address();
 
                         self.game_server
-                            .send(game_server::ConnectGame{
+                            .send(game_server::ConnectGame {
                                 address: address.recipient(),
                             })
                             .into_actor(self)
@@ -78,12 +77,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
                         if let Some(direction) = new_direction {
                             self.game_server.do_send(game_server::ChangeDirection {
                                 session_id: self.id,
-                                direction
+                                direction,
                             });
                         }
                     }
                 }
-            },
+            }
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
             _ => (),
         }
