@@ -5,24 +5,38 @@ use actix::prelude::*;
 use serde::Serialize;
 
 use crate::game::Direction;
-use crate::game_server;
+use crate::{game_server, game_session};
 
 pub struct WsGameSession {
     pub id: usize,
     pub game_server: Addr<game_server::GameServer>,
+    pub game_session: Option<Addr<game_session::GameSession>>,
 }
 
 impl Actor for WsGameSession {
     type Context = ws::WebsocketContext<Self>;
 }
 
-impl Handler<game_server::GameUpdated> for WsGameSession {
+impl Handler<game_session::GameUpdated> for WsGameSession {
     type Result = ();
 
-    fn handle(&mut self, msg: game_server::GameUpdated, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: game_session::GameUpdated, ctx: &mut Self::Context) {
         let json = serde_json::to_string(&msg.state);
 
         if let Ok(text) = json {
+            ctx.text(text);
+        }
+    }
+}
+
+impl Handler<game_session::ConnectGameSessionResult> for WsGameSession {
+    type Result = ();
+
+    fn handle(&mut self, msg: game_session::ConnectGameSessionResult, ctx: &mut Self::Context) -> Self::Result {
+        self.game_session = Some(msg.game_session);
+
+        let serde_result = serde_json::to_string(&msg.game_session_id);
+        if let Ok(text) = serde_result {
             ctx.text(text);
         }
     }
@@ -38,23 +52,15 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
 
                 match message {
                     "/connect" => {
-                        let address = ctx.address();
-
                         self.game_server
-                            .send(game_server::ConnectGame {
-                                address: address.recipient(),
+                            .send(game_server::ConnectGameServer {
+                                session_address: ctx.address(),
                             })
                             .into_actor(self)
                             .then(|res, act, ctx| {
                                 match res {
                                     Ok(result) => {
                                         act.id = result.session_id;
-
-                                        // todo: implement Into<ByteString> for responses
-                                        let serde_result = serde_json::to_string(&result.success);
-                                        if let Ok(text) = serde_result {
-                                            ctx.text(text);
-                                        }
                                     }
                                     _ => println!("Something is wrong"),
                                 }
@@ -75,10 +81,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
                         };
 
                         if let Some(direction) = new_direction {
-                            self.game_server.do_send(game_server::ChangeDirection {
-                                session_id: self.id,
-                                direction,
-                            });
+                            if let Some(game_session) = &self.game_session {
+                                game_session.do_send(game_session::ChangeDirection {
+                                    session_id: self.id,
+                                    direction,
+                                });
+                            }
                         }
                     }
                 }

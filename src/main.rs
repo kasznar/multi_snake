@@ -8,6 +8,7 @@ use env_logger::Env;
 
 mod game;
 mod game_server;
+mod game_session;
 mod session;
 
 
@@ -18,11 +19,12 @@ async fn index() -> impl Responder {
 pub async fn game_ws(
     req: HttpRequest,
     stream: web::Payload,
-    server: web::Data<Addr<game_server::GameServer>>
+    server: web::Data<Addr<game_server::GameServer>>,
 ) -> Result<HttpResponse, Error> {
     ws::start(session::WsGameSession {
         id: 0,
-        game_server: server.get_ref().clone()
+        game_server: server.get_ref().clone(),
+        game_session: None,
     }, &req, stream)
 }
 

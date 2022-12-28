@@ -85,16 +85,51 @@ class Snake {
     }
 }
 
+
+class Connection {
+    _onMessage = () => {
+    }
+
+    initWebSocket() {
+        this.webSocket = new WebSocket('ws://localhost:8080/ws/');
+
+        this.webSocket.onmessage = ((event) => {
+            const data = JSON.parse(event.data);
+            this._onMessage(data);
+        })
+    }
+
+    onMessage(cb) {
+        this._onMessage = cb;
+    }
+
+    send(data) {
+        this.webSocket.send(data)
+    }
+
+    connect() {
+        this.webSocket.send("/connect");
+    }
+
+    stop() {
+        this.webSocket.send("/stop");
+    }
+
+    constructor() {
+        this.initWebSocket();
+    }
+}
+
 class Game {
-    constructor(connection) {
+    constructor() {
+        this.connection = new Connection();
         this.renderer = new Renderer();
         this.snakes = [
             new Snake(this.renderer, colors.player1),
             new Snake(this.renderer, colors.player2)
         ]
         this.initEventListeners();
-
-        this.connection = connection;
+        
         this.connection.onMessage(this.handleMessage.bind(this))
     }
 
@@ -143,39 +178,5 @@ class Game {
     }
 }
 
-class Connection {
-    _onMessage = () => {
-    }
-
-    initWebSocket() {
-        this.webSocket = new WebSocket('ws://localhost:8080/ws/');
-
-        this.webSocket.onmessage = ((event) => {
-            const data = JSON.parse(event.data);
-            this._onMessage(data);
-        })
-    }
-
-    onMessage(cb) {
-        this._onMessage = cb;
-    }
-
-    send(data) {
-        this.webSocket.send(data)
-    }
-
-    connect() {
-        this.webSocket.send("/connect");
-    }
-
-    stop() {
-        this.webSocket.send("/stop");
-    }
-
-    constructor() {
-        this.initWebSocket();
-    }
-}
-
-new Game(new Connection());
+new Game();
 
