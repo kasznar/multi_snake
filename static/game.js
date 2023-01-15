@@ -150,10 +150,12 @@ class Game {
         const url = new URL(window.location.href);
         url.searchParams.append('gameId', gameId);
         this.ui.gameId.href = url;
+        this.ui.gameId.innerText = `gameId: ${gameId}`;
     }
 
     handleMessage(data) {
         if (data.game_session_id) {
+            console.log('handleMessage-data.game_session_id: ' + data.game_session_id)
             this.setGameId(data.game_session_id)
         }
 

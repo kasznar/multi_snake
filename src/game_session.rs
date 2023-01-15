@@ -10,7 +10,7 @@ use crate::session;
 
 const UPDATE_RATE: Duration = Duration::from_millis(1000);
 
-#[derive(Message)]
+#[derive(Message, Debug)]
 #[rtype(result = "()")]
 pub struct ConnectGameSessionResult {
     pub success: bool,
@@ -71,7 +71,6 @@ impl GameSession {
 
     fn start_game(&mut self, ctx: &mut Context<Self>) {
         let handle = ctx.run_interval(UPDATE_RATE, |act, ctx| {
-            println!("Running game update");
             act.game.tick();
             let state = &act.game;
 
@@ -113,8 +112,6 @@ impl Handler<ConnectGameSession> for GameSession {
     type Result = ();
 
     fn handle(&mut self, msg: ConnectGameSession, ctx: &mut Context<Self>) -> Self::Result {
-        println!("game session: handle connect game");
-
         if self.player1.is_some() && self.player2.is_some() {
             msg.address.do_send(ConnectGameSessionResult {
                 success: false,

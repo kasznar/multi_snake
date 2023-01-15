@@ -32,7 +32,7 @@ impl Handler<game_session::GameUpdated> for WsClientSession {
 
 #[derive(Serialize)]
 struct ConnectGameResponse {
-    game_session_id: usize,
+    game_session_id: String,
 }
 
 impl Handler<game_session::ConnectGameSessionResult> for WsClientSession {
@@ -43,7 +43,7 @@ impl Handler<game_session::ConnectGameSessionResult> for WsClientSession {
         self.game_session_id = Some(msg.game_session_id);
 
         let response = ConnectGameResponse {
-            game_session_id: msg.game_session_id,
+            game_session_id: msg.game_session_id.to_string(),
         };
 
         let serde_result = serde_json::to_string(&response);
@@ -90,7 +90,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsClientSession {
                                 game_session_id,
                             });
                         }
-
                     }
                     "/direction" => {
                         let new_direction = match message[1] {
