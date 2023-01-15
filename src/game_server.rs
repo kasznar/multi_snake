@@ -13,7 +13,8 @@ pub struct ConnectGameServerResult {
 }
 
 pub struct ConnectGameServer {
-    pub session_address: Addr<session::WsGameSession>,
+    pub session_address: Addr<session::WsClientSession>,
+    pub game_session_id: Option<usize>,
 }
 
 impl actix::Message for ConnectGameServer {
@@ -22,22 +23,24 @@ impl actix::Message for ConnectGameServer {
 
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct StopGame;
+pub struct StopGame {
+    pub game_session_id: usize,
+}
 
-pub struct GameSession {
+pub struct GameSessionItem {
     address: Addr<game_session::GameSession>,
     id: usize,
 }
 
 pub struct GameServer {
-    game_session: Option<GameSession>,
+    game_sessions: HashMap<usize, GameSessionItem>,
     rng: ThreadRng,
 }
 
 impl GameServer {
     pub fn new() -> GameServer {
         GameServer {
-            game_session: None,
+            game_sessions: HashMap::new(),
             rng: rand::thread_rng(),
         }
     }
@@ -51,17 +54,16 @@ impl Handler<ConnectGameServer> for GameServer {
     type Result = MessageResult<ConnectGameServer>;
 
     fn handle(&mut self, msg: ConnectGameServer, ctx: &mut Context<Self>) -> Self::Result {
-        let session_id = self.rng.gen::<usize>();
+        let game_session_id = msg.game_session_id.unwrap_or_else(|| self.rng.gen::<usize>());
 
-        let game_session = self.game_session.get_or_insert_with(|| {
-            let id = self.rng.gen::<usize>();
-            let address = game_session::GameSession::new(id).start();
-
-            GameSession {
-                address,
-                id,
+        let game_session = self.game_sessions.entry(game_session_id).or_insert(
+            GameSessionItem {
+                address: game_session::GameSession::new(game_session_id).start(),
+                id: game_session_id
             }
-        });
+        );
+
+        let session_id = self.rng.gen::<usize>();
 
         game_session.address.do_send(game_session::ConnectGameSession {
             session_id,
@@ -77,11 +79,11 @@ impl Handler<ConnectGameServer> for GameServer {
 impl Handler<StopGame> for GameServer {
     type Result = MessageResult<StopGame>;
 
-    fn handle(&mut self, _: StopGame, ctx: &mut Context<Self>) -> Self::Result {
-        if let Some(game_session) = &self.game_session {
-            game_session.address.do_send(game_session::StopGameSession)
+    fn handle(&mut self, msg: StopGame, ctx: &mut Context<Self>) -> Self::Result {
+        if let Some(game_session) = &self.game_sessions.get(&msg.game_session_id) {
+            game_session.address.do_send(game_session::StopGameSession);
+            self.game_sessions.remove(&msg.game_session_id);
         }
-        self.game_session = None;
 
         MessageResult(())
     }

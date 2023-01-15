@@ -107,8 +107,8 @@ class Connection {
         this.webSocket.send(data)
     }
 
-    connect() {
-        this.webSocket.send("/connect");
+    connect(gameId) {
+        this.webSocket.send(`/connect ${gameId}`);
     }
 
     stop() {
@@ -128,15 +128,43 @@ class Game {
             new Snake(this.renderer, colors.player1),
             new Snake(this.renderer, colors.player2)
         ]
+
+        this.initDom();
         this.initEventListeners();
-        
+        this.getGameIdFromUrl();
+
         this.connection.onMessage(this.handleMessage.bind(this))
     }
 
+    getGameIdFromUrl() {
+        let params = (new URL(document.location)).searchParams;
+        let gameId = params.get("gameId");
+        console.log(gameId)
+
+        this.setGameId(gameId)
+    }
+
+    setGameId(gameId) {
+        this.gameId = gameId;
+
+        const url = new URL(window.location.href);
+        url.searchParams.append('gameId', gameId);
+        this.ui.gameId.href = url;
+    }
+
     handleMessage(data) {
+        if (data.game_session_id) {
+            this.setGameId(data.game_session_id)
+        }
+
         if (data.players) {
             this.tick(data);
         }
+    }
+
+    initDom() {
+        this.ui = {};
+        this.ui.gameId = document.getElementById('game-id');
     }
 
     initEventListeners() {
@@ -145,7 +173,7 @@ class Game {
         const initWsButton = document.getElementById('init-ws');
 
         connectButton.addEventListener('click', () => {
-            this.connection.connect();
+            this.connection.connect(this.gameId);
         })
 
         disconnectButton.addEventListener('click', () => {
@@ -165,7 +193,7 @@ class Game {
                 [KeyCode.ArrowDown]: Direction.DOWN,
             };
 
-            this.connection.send(eventMap[event.key]);
+            this.connection.send(`/direction ${eventMap[event.key]}`);
         });
     }
 

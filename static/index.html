@@ -29,6 +29,9 @@
 
         #controls {
             margin-bottom: 10px;
+            display: grid;
+            grid-auto-flow: column;
+            grid-gap: 10px;
         }
     </style>
 </head>
@@ -37,6 +40,7 @@
     <button id="init-ws">init ws</button>
     <button id="connect">connect</button>
     <button id="stop">stop</button>
+    <div><a id="game-id">game url</a></div>
 </div>
 <canvas id="canvas"></canvas>
 </body>

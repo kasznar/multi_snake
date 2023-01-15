@@ -21,7 +21,7 @@ pub struct ConnectGameSessionResult {
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct ConnectGameSession {
-    pub address: Addr<session::WsGameSession>,
+    pub address: Addr<session::WsClientSession>,
     pub session_id: usize,
 }
 
@@ -45,7 +45,7 @@ pub struct ChangeDirection {
 
 struct PlayerSession {
     id: usize,
-    address: Addr<session::WsGameSession>,
+    address: Addr<session::WsClientSession>,
 }
 
 pub struct GameSession {
