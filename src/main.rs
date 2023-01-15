@@ -1,8 +1,6 @@
-use std::sync::Mutex;
-
-use actix::{Actor, Addr, ArbiterHandle, Context, Running, StreamHandler};
+use actix::{Actor, Addr};
 use actix_files::{Files, NamedFile};
-use actix_web::{Error, get, HttpRequest, HttpResponse, middleware, post, Responder, web};
+use actix_web::{Error, HttpRequest, HttpResponse, middleware, Responder, web};
 use actix_web_actors::ws;
 use env_logger::Env;
 

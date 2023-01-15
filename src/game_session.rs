@@ -1,11 +1,9 @@
-use std::borrow::Borrow;
-use std::collections::HashMap;
 use std::time::Duration;
+
 use actix::{Actor, Context, Handler, MessageResult};
-use serde::{Serialize};
 use actix::prelude::*;
+
 use crate::game::{Direction, Game, Player};
-use rand::{self, rngs::ThreadRng, Rng};
 use crate::session;
 
 const UPDATE_RATE: Duration = Duration::from_millis(1000);
@@ -54,7 +52,6 @@ pub struct GameSession {
     player2: Option<PlayerSession>,
     game: Game,
     handle: Option<SpawnHandle>,
-    rng: ThreadRng,
 }
 
 impl GameSession {
@@ -65,12 +62,11 @@ impl GameSession {
             player2: None,
             handle: None,
             game: Game::new(),
-            rng: rand::thread_rng(),
         }
     }
 
     fn start_game(&mut self, ctx: &mut Context<Self>) {
-        let handle = ctx.run_interval(UPDATE_RATE, |act, ctx| {
+        let handle = ctx.run_interval(UPDATE_RATE, |act, _ctx| {
             act.game.tick();
             let state = &act.game;
 
@@ -98,7 +94,7 @@ impl GameSession {
 impl Actor for GameSession {
     type Context = Context<Self>;
 
-    fn started(&mut self, ctx: &mut Self::Context) {
+    fn started(&mut self, _ctx: &mut Self::Context) {
         // self.start_game(ctx);
         println!("GameSession started");
     }
@@ -155,7 +151,7 @@ impl Handler<StopGameSession> for GameSession {
 impl Handler<ChangeDirection> for GameSession {
     type Result = MessageResult<ChangeDirection>;
 
-    fn handle(&mut self, msg: ChangeDirection, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ChangeDirection, _ctx: &mut Self::Context) -> Self::Result {
         if let Some(player1) = &self.player1 {
             if player1.id == msg.session_id {
                 self.game.change_direction(Player::Player1, msg.direction);

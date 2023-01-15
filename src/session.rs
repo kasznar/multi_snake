@@ -1,5 +1,4 @@
-use actix::{Actor, Addr, ArbiterHandle, AsyncContext, Context, Running, StreamHandler};
-use actix_web::{Error, get, HttpRequest, HttpResponse, middleware, post, Responder, web};
+use actix::{Actor, Addr, AsyncContext, StreamHandler};
 use actix_web_actors::ws;
 use actix::prelude::*;
 use serde::Serialize;
@@ -73,7 +72,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsClientSession {
                                 game_session_id,
                             })
                             .into_actor(self)
-                            .then(|res, act, ctx| {
+                            .then(|res, act, _ctx| {
                                 match res {
                                     Ok(result) => {
                                         act.id = result.session_id;

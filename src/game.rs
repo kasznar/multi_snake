@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 
 const SNAKE_DEFAULT_LENGTH: u32 = 5;
 

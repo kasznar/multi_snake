@@ -1,10 +1,6 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
-use std::time::Duration;
 use actix::{Actor, Context, Handler, MessageResult};
-use serde::{Serialize};
 use actix::prelude::*;
-use crate::game::{Direction, Game, Player};
 use rand::{self, rngs::ThreadRng, Rng};
 use crate::{game_session, session};
 
@@ -29,12 +25,12 @@ pub struct StopGame {
 
 pub struct GameSessionItem {
     address: Addr<game_session::GameSession>,
-    id: usize,
+    _id: usize,
 }
 
 pub struct GameServer {
     game_sessions: HashMap<usize, GameSessionItem>,
-    rng: ThreadRng,
+    rng: ThreadRng, // todo: better id generator?
 }
 
 impl GameServer {
@@ -53,13 +49,13 @@ impl Actor for GameServer {
 impl Handler<ConnectGameServer> for GameServer {
     type Result = MessageResult<ConnectGameServer>;
 
-    fn handle(&mut self, msg: ConnectGameServer, ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: ConnectGameServer, _ctx: &mut Context<Self>) -> Self::Result {
         let game_session_id = msg.game_session_id.unwrap_or_else(|| self.rng.gen::<usize>());
 
         let game_session = self.game_sessions.entry(game_session_id).or_insert(
             GameSessionItem {
                 address: game_session::GameSession::new(game_session_id).start(),
-                id: game_session_id
+                _id: game_session_id
             }
         );
 
@@ -79,7 +75,7 @@ impl Handler<ConnectGameServer> for GameServer {
 impl Handler<StopGame> for GameServer {
     type Result = MessageResult<StopGame>;
 
-    fn handle(&mut self, msg: StopGame, ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: StopGame, _ctx: &mut Context<Self>) -> Self::Result {
         if let Some(game_session) = &self.game_sessions.get(&msg.game_session_id) {
             game_session.address.do_send(game_session::StopGameSession);
             self.game_sessions.remove(&msg.game_session_id);
