@@ -6,7 +6,6 @@ use serde::Serialize;
 
 use crate::game::Direction;
 use crate::{game_server, game_session};
-use crate::game_server::GameServer;
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
