@@ -144,6 +144,7 @@ impl Handler<StopGameSession> for GameSession {
     fn handle(&mut self, _: StopGameSession, ctx: &mut Context<Self>) -> Self::Result {
         self.stop_game(ctx);
 
+        ctx.stop();
         MessageResult(())
     }
 }

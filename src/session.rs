@@ -1,3 +1,4 @@
+use std::time::{Duration, Instant};
 use actix::{Actor, Addr, AsyncContext, StreamHandler};
 use actix_web_actors::ws;
 use actix::prelude::*;
@@ -5,16 +6,65 @@ use serde::Serialize;
 
 use crate::game::Direction;
 use crate::{game_server, game_session};
+use crate::game_server::GameServer;
+
+const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
+const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub struct WsClientSession {
     pub id: usize,
+    pub hb: Instant,
+    pub handle: Option<SpawnHandle>,
     pub game_server: Addr<game_server::GameServer>,
     pub game_session: Option<Addr<game_session::GameSession>>,
     pub game_session_id: Option<usize>,
 }
 
+impl WsClientSession {
+    fn hb(&mut self, ctx: &mut ws::WebsocketContext<Self>) {
+        let handle = ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
+            if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
+                println!("Websocket Client heartbeat failed, disconnecting!");
+
+                if let Some(game_session_id) = act.game_session_id {
+                    act.game_server.do_send(game_server::StopGame {
+                        game_session_id,
+                    });
+                }
+
+                ctx.stop();
+
+                return;
+            }
+
+            ctx.text("ping?");
+            ctx.ping(b"");
+        });
+
+        self.handle = Some(handle);
+    }
+}
+
 impl Actor for WsClientSession {
     type Context = ws::WebsocketContext<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        self.hb(ctx);
+    }
+
+    fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
+        if let Some(handle) = self.handle {
+            ctx.cancel_future(handle);
+        }
+
+        if let Some(game_session_id) = self.game_session_id {
+            self.game_server.do_send(game_server::StopGame {
+                game_session_id,
+            });
+        }
+
+        Running::Stop
+    }
 }
 
 impl Handler<game_session::GameUpdated> for WsClientSession {
@@ -57,6 +107,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsClientSession {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
+            Ok(ws::Message::Pong(_)) => {
+                self.hb = Instant::now();
+            },
             Ok(ws::Message::Text(text)) => {
                 // todo: how to match directly the ByteString
                 let raw_message = text.trim();

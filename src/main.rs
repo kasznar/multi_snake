@@ -1,3 +1,4 @@
+use std::time::Instant;
 use actix::{Actor, Addr};
 use actix_files::{Files, NamedFile};
 use actix_web::{Error, HttpRequest, HttpResponse, middleware, Responder, web};
@@ -21,6 +22,8 @@ pub async fn game_ws(
 ) -> Result<HttpResponse, Error> {
     ws::start(session::WsClientSession {
         id: 0,
+        hb: Instant::now(),
+        handle: None,
         game_server: server.get_ref().clone(),
         game_session: None,
         game_session_id: None,
