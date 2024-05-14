@@ -10,6 +10,7 @@ mod game_server;
 mod game_session;
 mod session;
 
+use actix_cors::Cors;
 
 async fn index() -> impl Responder {
     NamedFile::open_async("./static/index.html").await.unwrap()
